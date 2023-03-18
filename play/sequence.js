@@ -31,16 +31,20 @@ async function insert(workerID) {
       },
       {
         $lookup: {
+          from: "seq",
           as: "newdoc",
-          let: { seq: "$_id.seq" },
+          let: { seq: { $add: ["$_id.seq", 1] } },
           pipeline: [
             {
-              $documents: [
-                {
+              $match: { _id: { seq: 0 } },
+            },
+            {
+              $replaceRoot: {
+                newRoot: {
                   ...doc,
-                  _id: { seq: { $add: ["$$seq", 1] } },
+                  _id: { seq: "$$seq" },
                 },
-              ],
+              },
             },
           ],
         },
@@ -59,6 +63,7 @@ async function insert(workerID) {
     await db.collection("seq").aggregate(pipeline).toArray();
     return true;
   } catch (e) {
+    // console.log(e);
     return false;
   }
 }
@@ -78,12 +83,12 @@ seqExpect = seqExpect[0]._id.seq + 1;
 
 const startTime = Date.now();
 
-const workers = Array.from({ length: 10000 }, (v, i) => i + 1);
+const workers = Array.from({ length: 100 }, (v, i) => i + 1);
 let nCollision = 0;
 console.log(`start total [${workers.length}] workers`);
 workers.forEach(async (wid) => {
   while (!(await insert(wid))) {
-    // console.log(`worker[${wid}] collision: back off`);
+    console.log(`worker[${wid}] collision: back off`);
     nCollision++;
     // await backoff();
   }
