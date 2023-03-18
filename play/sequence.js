@@ -19,9 +19,8 @@ const sample = {
   country: { $country: { full: true } },
 };
 
-async function insert(workerID) {
+async function insert(workerID, doc) {
   try {
-    const doc = mgen(sample);
     const pipeline = [
       {
         $sort: { _id: -1 },
@@ -87,7 +86,8 @@ const workers = Array.from({ length: 100 }, (v, i) => i + 1);
 let nCollision = 0;
 console.log(`start total [${workers.length}] workers`);
 workers.forEach(async (wid) => {
-  while (!(await insert(wid))) {
+  const doc = mgen(sample);
+  while (!(await insert(wid, doc))) {
     console.log(`worker[${wid}] collision: back off`);
     nCollision++;
     // await backoff();
