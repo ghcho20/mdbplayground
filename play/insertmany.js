@@ -1,9 +1,10 @@
 import { use, db } from "../mongocli.js";
 import mgen from "mgeneratejs";
 
-use("bigdb");
+use("sample");
 
 const sample = {
+  _id: 1,
   name: "$name",
   age: "$age",
   sex: { $pick: { array: ["male", "female", "it"] } },
@@ -12,11 +13,12 @@ const sample = {
   country: { $country: { full: true } },
 };
 
-function gen_data(nIns) {
+function gen_data(lastId, nIns) {
   let docs = [];
   let doc;
   while (nIns-- > 0) {
     doc = mgen(sample);
+    doc._id = ++lastId;
     docs.push(doc);
     // console.log(doc);
   }
@@ -24,8 +26,16 @@ function gen_data(nIns) {
 }
 
 async function fillCollection() {
-  const insmany = gen_data(2);
-  // await db.collection("users").insertMany(insmany, { writeConcern: { w: 1 } });
+  const lastDoc = await db
+    .collection("users")
+    .find()
+    .sort({ _id: -1 })
+    .limit(1)
+    .toArray();
+  const lastId = lastDoc[0] ? lastDoc[0]._id : 0;
+  console.log("lastId: ", lastId);
+  const insmany = gen_data(lastId, 200000);
+  await db.collection("users").insertMany(insmany, { writeConcern: { w: 1 } });
 }
 await fillCollection();
 

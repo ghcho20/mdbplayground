@@ -1,0 +1,38 @@
+// use("sample");
+// db.runCommand({
+//   convertToCapped: "users",
+//   size: 4096,
+// });
+
+use("sample");
+db.runCommand({
+  collMod: "users",
+  cappedSize: 1e15 - 1,
+  cappedMax: 200_000,
+});
+
+use("sample");
+db.users.find({}, { _id: 1 }).sort({ name: 1 });
+
+use("sample");
+db.users.drop();
+
+use("sample");
+db.createCollection("users", {
+  capped: true,
+  size: 1e15 - 1,
+  max: 200_000,
+});
+
+use("sample");
+db.users.createIndex({ name: 1, age: 1 });
+
+use("sample");
+db.users.aggregate([
+  {
+    $group: {
+      _id: null,
+      size: { $sum: { $bsonSize: "$$ROOT" } },
+    },
+  },
+]);
