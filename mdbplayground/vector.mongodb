@@ -1,0 +1,29 @@
+use("gen");
+const qcand = db.thousand.find().limit(200);
+const vtq = qcand.toArray()[100].vector;
+// vtq
+
+let pipe = [
+  {
+    $vectorSearch: {
+      index: "vector_index",
+      path: "vector",
+      limit: 10,
+      numCandidates: 100,
+      queryVector: vtq,
+      //   filter: {expression}
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      title: 1,
+      score: { $meta: "vectorSearchScore" },
+    },
+  },
+];
+pipe[0].$vectorSearch.filter = {
+  type: "a",
+};
+const resp = db.million.aggregate(pipe).explain("executionStats");
+resp.stages;
